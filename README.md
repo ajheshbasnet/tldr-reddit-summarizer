@@ -25,6 +25,12 @@ This setup balances performance and efficiency, making it suitable for single-GP
 
 ---
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ajheshbasnet/tldr-reddit-summarizer/main/wandb-charts.png" width="600">
+</p>
+
+---
+
 ## Training Environment
 
 Training was performed on a **single NVIDIA T4 GPU**.  
