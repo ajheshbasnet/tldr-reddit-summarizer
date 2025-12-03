@@ -14,9 +14,6 @@ A decoder-only transformer trained from scratch for generating concise TL;DR sum
 - [Installation](#installation)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
-- [Future Work](#future-work)
-- [References](#references)
-- [License](#license)
 
 ---
 
@@ -81,7 +78,7 @@ The model is trained on a large corpus to predict the next token given all previ
 
 **Key Learnings**: The model develops an internal representation of language structure, common patterns, and contextual dependencies that serve as the foundation for downstream tasks.
 
-![Pre-training Metrics](static/pre-training-wandb.png)
+![Pre-training Metrics](https://github.com/ajheshbasnet/tldr-reddit-summarizer/blob/main/static/pre-training-wandb.png)
 
 The pre-training curve shows the model's perplexity decreasing over time, indicating improved language modeling capability. The validation loss closely tracks training loss, suggesting good generalization without significant overfitting.
 
@@ -95,7 +92,7 @@ During SFT, the model learns to generate TL;DR summaries by training on Reddit p
 
 **EOS Token Prediction**: Training the model to reliably predict the End-of-Sequence token ensures summaries have appropriate length and don't ramble indefinitely.
 
-![Supervised Fine-Tuning Metrics](static/sft.png)
+![Supervised Fine-Tuning Metrics](https://github.com/ajheshbasnet/tldr-reddit-summarizer/blob/main/static/sft.png)
 
 The SFT training shows rapid initial improvement as the model adapts its general language knowledge to the specific structure and style of Reddit summaries. The validation metrics indicate the model successfully learns the summarization task without memorizing training examples.
 
@@ -186,7 +183,7 @@ CUDA >= 11.8 (for GPU training)
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tldr-reddit-summarizer.git
+git clone https://github.com/ajheshbasnet/tldr-reddit-summarizer.git
 cd tldr-reddit-summarizer
 
 # Create virtual environment
@@ -213,28 +210,29 @@ tqdm>=4.65.0
 
 ## Usage
 
-### Training
+### Training from Scratch
 
 ```bash
+# Navigate to source directory
+cd src
+
 # Stage 1: Pre-training
-python train_pretrain.py --config config.yaml
+python main.py --mode pretrain
 
 # Stage 2: Supervised Fine-Tuning
-python train_sft.py --config config.yaml --checkpoint pretrained_model.pt
+python SFT.py --checkpoint pretrained_model.pt
 
 # Stage 3: DPO Alignment
-python train_dpo.py --config config.yaml --checkpoint sft_model.pt
+python RL.py --checkpoint sft_model.pt
 ```
 
 ### Inference
 
 ```python
-from model import RedditSummarizer
-from tokenizer import load_tokenizer
+from src.main import RedditSummarizer
 
-# Load model and tokenizer
+# Load trained model
 model = RedditSummarizer.from_pretrained("path/to/checkpoint")
-tokenizer = load_tokenizer()
 
 # Generate summary
 reddit_post = """Your long Reddit post text here..."""
@@ -245,10 +243,8 @@ print(f"TL;DR: {summary}")
 ### Evaluation
 
 ```bash
-# Evaluate on test set
-python evaluate.py --checkpoint final_model.pt --test_data data/test.json
-
-# Metrics: ROUGE scores, perplexity, and human evaluation scores
+# Evaluate model performance
+python main.py --mode evaluate --checkpoint final_model.pt
 ```
 
 ---
@@ -258,66 +254,51 @@ python evaluate.py --checkpoint final_model.pt --test_data data/test.json
 ```
 tldr-reddit-summarizer/
 │
-├── model/
-│   ├── architecture.py      # Model architecture definition
-│   ├── attention.py          # GQA implementation
-│   ├── rope.py               # Rotary Position Embeddings
-│   └── swiglu.py             # SwiGLU activation
-│
-├── training/
-│   ├── pretrain.py           # Pre-training script
-│   ├── sft.py                # Supervised fine-tuning
-│   ├── dpo.py                # Direct Preference Optimization
-│   └── utils.py              # Training utilities
-│
-├── data/
-│   ├── preprocess.py         # Data preprocessing pipeline
-│   └── dataset.py            # PyTorch dataset classes
-│
-├── evaluation/
-│   ├── metrics.py            # Evaluation metrics
-│   └── evaluate.py           # Evaluation script
+├── src/
+│   ├── main.py              # Main training script (pre-training)
+│   ├── SFT.py               # Supervised fine-tuning implementation
+│   ├── RL.py                # Direct Preference Optimization (DPO)
+│   └── __init__.py          
 │
 ├── static/
-│   ├── pre-training-wandb.png
-│   └── sft.png
+│   ├── pre-training-wandb.png    # Pre-training metrics visualization
+│   └── sft.png                   # SFT training metrics
 │
-├── config.yaml               # Model and training configuration
-├── requirements.txt          # Python dependencies
-└── README.md                 # This file
+├── README.md                # Project documentation
+└── requirements.txt         # Python dependencies
 ```
+
+### File Descriptions
+
+**src/main.py**: Core implementation containing the transformer architecture with RoPE, GQA, and SwiGLU components. Handles pre-training with next-token prediction objective.
+
+**src/SFT.py**: Supervised fine-tuning script that adapts the pre-trained model for summarization. Implements EOS token prediction and context alignment training.
+
+**src/RL.py**: Reinforcement learning implementation using Direct Preference Optimization. Aligns model outputs with human preferences using preference pair data.
+
+**static/**: Contains training visualization charts logged from Weights & Biases showing loss curves, perplexity, and other metrics across training stages.
 
 ---
 
-## Future Work
+## Technical Implementation Details
 
-### Model Improvements
+### Model Components
 
-- Experiment with larger model sizes (1B+ parameters)
-- Implement Flash Attention for improved training efficiency
-- Add sparse attention patterns for longer context windows
-- Explore mixture-of-experts architecture
+The architecture is implemented as a standard decoder-only transformer with the following modifications:
 
-### Training Enhancements
+**Rotary Position Embeddings**: Applied to query and key vectors in the attention mechanism before computing attention scores. The rotation angle depends on the position index, providing relative positional information.
 
-- Implement iterative DPO with multiple preference rounds
-- Add reinforcement learning with actual reward models (PPO)
-- Explore curriculum learning strategies
-- Implement continuous pre-training on domain-specific data
+**Grouped Query Attention**: The 8 query heads are split into 4 groups, where each group shares the same key and value projections. This reduces the KV cache from 8 copies to 4 copies, halving memory requirements during inference.
 
-### Deployment
+**SwiGLU FFN**: The feed-forward network uses a gating mechanism where one linear projection is multiplied element-wise with the Swish activation of another projection, before passing through a final linear layer.
 
-- Quantization to INT8/INT4 for efficient inference
-- ONNX export for cross-platform deployment
-- API development for production serving
-- Web interface for interactive summarization
+### Training Procedure
 
-### Evaluation
+**Pre-training**: Standard causal language modeling with teacher forcing. The model receives input tokens and learns to predict the next token at each position.
 
-- Comprehensive human evaluation studies
-- A/B testing against commercial summarization models
-- Fine-grained analysis of summary quality dimensions
-- Cross-domain generalization testing
+**SFT**: The model is fine-tuned on post-summary pairs where the input is the Reddit post and the target is the TL;DR summary. Special attention is given to the EOS token to ensure proper summary termination.
+
+**DPO**: Uses pairs of summaries (preferred vs rejected) to directly optimize the policy. The loss function encourages the model to increase the probability of preferred summaries while decreasing the probability of rejected ones, without needing a separate reward model.
 
 ---
 
@@ -334,27 +315,3 @@ Shazeer, N. (2020). "GLU Variants Improve Transformer"
 
 **Direct Preference Optimization**  
 Rafailov, R., et al. (2023). "Direct Preference Optimization: Your Language Model is Secretly a Reward Model"
-
----
-
-## License
-
-MIT License
-
-Copyright (c) 2024
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----
-
-## Acknowledgments
-
-This project was developed as part of advanced research in natural language processing and reinforcement learning. Special thanks to the open-source community for providing the foundational tools and libraries that made this work possible.
-
-For questions or collaboration opportunities, please open an issue or reach out via GitHub.
-
-**Star this repository if you find it useful!**
