@@ -264,8 +264,8 @@ tldr-reddit-summarizer/
 │   ├── pre-training-wandb.png    # Pre-training metrics visualization
 │   └── sft.png                   # SFT training metrics
 │
-├── README.md                # Project documentation
-└── requirements.txt         # Python dependencies
+└── README.md                # Project documentation
+
 ```
 
 ### File Descriptions
