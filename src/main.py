@@ -528,7 +528,7 @@ for epoch in range(config.epochs):
             'train_loss': avg_train_loss,
             'val_loss': avg_val_loss,
         }, file_name)
-        print(f"✓ Best model saved (val_loss: {avg_val_loss:.4f})")
+    print(f"✓ Best model saved (val_loss: {avg_val_loss:.4f})")
 run.finish()
 
 generate_text("TITLE: My boyfriend [M33] and I have been in our relationship but totally honest about herself.", 450, False)
