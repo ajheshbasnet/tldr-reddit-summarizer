@@ -621,7 +621,7 @@ def lr_lambda(steps):
     WARMUP_STEP = 250
     TOTAL_STEP = math.ceil(SUPERVISE_DATA_LEN/(config.train_batch_size * config.gradient_accumulation_size))*SFT_EPOCHS
 
-    if steps < WARMUP_STEP:f
+    if steps < WARMUP_STEP:
         return steps/WARMUP_STEP
 
     progress = (steps - WARMUP_STEP) / (TOTAL_STEP- WARMUP_STEP)
