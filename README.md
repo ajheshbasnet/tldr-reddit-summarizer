@@ -57,7 +57,7 @@ The model uses SwiGLU (Swish-Gated Linear Unit) activation instead of traditiona
 - **Head Dimension**: 64 (d_model / n_heads)
 - **Maximum Sequence Length**: 750 tokens
 - **Vocabulary Size**: 50,257 (GPT-2 tokenizer)
-- **Total Parameters**: Approximately 85M parameters
+- **Total Parameters**: Approximately ~64M parameters
 
 ---
 
